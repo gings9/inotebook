@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
 const UserSchema = new Schema({
   //schema fields are: name, email, password, date
@@ -24,4 +25,5 @@ const UserSchema = new Schema({
   },
 });
 
-module.exports = mongoose.model("User", UserSchema);
+const user = mongoose.model("User", UserSchema);
+module.exports = user;

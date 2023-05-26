@@ -25,7 +25,7 @@ router.post(
       let user = await User.findOne({ email: req.body.email });
       if (user) {
         return res
-          .status(400)
+          .status(400) //TODO: replace 400 status code with Conflict Error status code
           .json({ error: "Sorry a user with this email is already exists!" });
       }
       user = await User.create({

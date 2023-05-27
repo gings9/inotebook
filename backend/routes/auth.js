@@ -2,7 +2,12 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
+const JWT_SECRET = "Harryisagood$boy";
+
+//ENDPOINT: 1
 //Create a  User using : POST "/api/auth/createuser". No login required
 router.post(
   "/createuser",
@@ -20,32 +25,85 @@ router.post(
       //with 400 Bad Request Status Code
       return res.status(400).json({ errors: errors.array() });
     }
-    //Check whether the user with this email exists already
     try {
+      //Check whether the user with this email exists already
       let user = await User.findOne({ email: req.body.email });
       if (user) {
         return res
-          .status(400) //TODO: replace 400 status code with Conflict Error status code
+          .status(409)
           .json({ error: "Sorry a user with this email is already exists!" });
       }
+      const salt = await bcrypt.genSalt(10);
+      const secPass = await bcrypt.hash(req.body.password, salt);
+      //create a new user
       user = await User.create({
         name: req.body.name, //to put username to the request body
-        password: req.body.password, //to put password to the request body
+        password: secPass, //to put secure password with salt to the request body
         email: req.body.email, //to put email to the request body
       });
-      res.json(user);
+      //generate auth token for the create user response
+      const data = {
+        user: {
+          id: user.id, //taking user id from database
+        },
+      };
+      const authToken = jwt.sign(data, JWT_SECRET); //payload + signature
+      // console.log(jwtData);
+      // res.json(user);  //no need to send user now
+      res.json({ authToken });
     } catch (error) {
       console.error(error.message);
-      res.status(500).send("Some error occurred");
+      res.status(500).send("Internal Server Error");
     }
-    // .then((user) => res.json(user)) //then get the json response for user
-    // .catch((err) => {
-    //   console.error(err);
-    //   res.json({
-    //     error: "Please enter a unique value for email",
-    //     message: err.message,
-    //   });
-    //}); //console log to catch block to handle error with message in json response
+  }
+);
+
+//ENDPOINT: 2
+//Authenticate a  User using : POST "/api/auth/login". No login required
+router.post(
+  "/login",
+  [
+    body("email", "Enter a Valid Email").isEmail(),
+    body("password", "Password cannot be blank").exists(),
+  ],
+  async (req, res) => {
+    //if there are errors, return bad request and the errors
+    const errors = validationResult(req);
+    //if errors are not empty means we have errors
+    if (!errors.isEmpty()) {
+      //then return response with an error array (if multiple errors)
+      //with 400 Bad Request Status Code
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { email, password } = req.body;
+    try {
+      //Check whether the user with this email exists already
+      let user = await User.findOne({ email });
+      if (!user) {
+        //if user is not found return with 401: Unauthorized
+        return res
+          .status(401)
+          .json({ error: "Please enter correct UserId & password" });
+      }
+      //check whether the password hash is matching with the database password hash
+      const passwordCompare = await bcrypt.compare(password, user.password);
+      if (!passwordCompare) {
+        return res
+          .status(401)
+          .json({ error: "Please enter correct UserId & password" });
+      }
+      //generate auth token for the login response
+      const data = {
+        user: {
+          id: user.id, //taking user id from database
+        },
+      };
+      const authToken = jwt.sign(data, JWT_SECRET); //payload + signature
+      res.json({ authToken });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send("Internal Server Error");
+    }
   }
 );
 

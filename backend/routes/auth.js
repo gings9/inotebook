@@ -3,11 +3,12 @@ const router = express.Router();
 const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+var jwt = require("jsonwebtoken");
+var fetchuser = require("../middleware/fetchuser");
 
-const JWT_SECRET = "Harryisagood$boy";
+const JWT_SECRET = "Harryisagood$boy"; //TODO: put this in environment variable
 
-//ENDPOINT: 1
+//ENDPOINT: Route-1
 //Create a  User using : POST "/api/auth/createuser". No login required
 router.post(
   "/createuser",
@@ -58,7 +59,7 @@ router.post(
   }
 );
 
-//ENDPOINT: 2
+//ENDPOINT: Route-2
 //Authenticate a  User using : POST "/api/auth/login". No login required
 router.post(
   "/login",
@@ -82,14 +83,14 @@ router.post(
       if (!user) {
         //if user is not found return with 401: Unauthorized
         return res
-          .status(401)
+          .status(401) //TODO: change to 403: unauthenticated
           .json({ error: "Please enter correct UserId & password" });
       }
       //check whether the password hash is matching with the database password hash
       const passwordCompare = await bcrypt.compare(password, user.password);
       if (!passwordCompare) {
         return res
-          .status(401)
+          .status(401) //TODO: change to 403: unauthenticated
           .json({ error: "Please enter correct UserId & password" });
       }
       //generate auth token for the login response
@@ -107,4 +108,17 @@ router.post(
   }
 );
 
+//ENDPOINT: Route-3
+//Get logged-in a  User details : POST "/api/auth/getuser". Login required
+router.post("/getuser", fetchuser, async (req, res) => {
+  try {
+    userId = req.user.id; ///temporary userID
+    //find the user by userId select details except the password:
+    const user = await User.findById(userId).select("-password");
+    res.send(user);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+});
 module.exports = router;

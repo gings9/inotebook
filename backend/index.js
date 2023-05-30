@@ -13,5 +13,5 @@ app.use("/api/auth", require("./routes/auth")); // API request for authenticatio
 app.use("/api/notes", require("./routes/notes")); // API request for notes generation
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`iNotebook backend listening on port ${port}`);
 });

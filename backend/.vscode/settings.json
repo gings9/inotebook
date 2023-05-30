@@ -1,9 +1,13 @@
 {
     "cSpell.words": [
+        "addnote",
         "createuser",
+        "deletenote",
+        "fetchallnotes",
         "fetchuser",
         "getuser",
         "Harryisagood",
-        "inotebook"
+        "inotebook",
+        "updatenote"
     ]
 }

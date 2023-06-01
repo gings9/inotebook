@@ -18,21 +18,23 @@ router.post(
     body("password", "Enter a Valid Password").isLength({ min: 5 }),
   ],
   async (req, res) => {
+    let success = false;
     //if there are errors, return bad request and the errors
     const errors = validationResult(req);
     //if errors are not empty means we have errors
     if (!errors.isEmpty()) {
       //then return response with an error array (if multiple errors)
       //with 400 Bad Request Status Code
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success, errors: errors.array() });
     }
     try {
       //Check whether the user with this email exists already
       let user = await User.findOne({ email: req.body.email });
       if (user) {
-        return res
-          .status(409)
-          .json({ error: "Sorry a user with this email is already exists!" });
+        return res.status(409).json({
+          success,
+          error: "Sorry a user with this email is already exists!",
+        });
       }
       const salt = await bcrypt.genSalt(10);
       const secPass = await bcrypt.hash(req.body.password, salt);
@@ -51,7 +53,8 @@ router.post(
       const authToken = jwt.sign(data, JWT_SECRET); //payload + signature
       // console.log(jwtData);
       // res.json(user);  //no need to send user now
-      res.json({ authToken });
+      success = true;
+      res.json({ success, authToken });
     } catch (error) {
       console.error(error.message);
       res.status(500).send("Internal Server Error");
@@ -68,6 +71,7 @@ router.post(
     body("password", "Password cannot be blank").exists(),
   ],
   async (req, res) => {
+    let success = false;
     //if there are errors, return bad request and the errors
     const errors = validationResult(req);
     //if errors are not empty means we have errors
@@ -81,17 +85,19 @@ router.post(
       //Check whether the user with this email exists already
       let user = await User.findOne({ email });
       if (!user) {
+        success = false;
         //if user is not found return with 401: Unauthorized
         return res
           .status(401) //TODO: change to 403: unauthenticated
-          .json({ error: "Please enter correct UserId & password" });
+          .json({ success, error: "Please enter correct UserId & password" });
       }
       //check whether the password hash is matching with the database password hash
       const passwordCompare = await bcrypt.compare(password, user.password);
       if (!passwordCompare) {
+        success = false;
         return res
           .status(401) //TODO: change to 403: unauthenticated
-          .json({ error: "Please enter correct UserId & password" });
+          .json({ success, error: "Please enter correct UserId & password" });
       }
       //generate auth token for the login response
       const data = {
@@ -100,7 +106,8 @@ router.post(
         },
       };
       const authToken = jwt.sign(data, JWT_SECRET); //payload + signature
-      res.json({ authToken });
+      success = true;
+      res.json({ success, authToken });
     } catch (error) {
       console.error(error.message);
       res.status(500).send("Internal Server Error");

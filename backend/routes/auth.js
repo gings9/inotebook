@@ -112,7 +112,7 @@ router.post(
 //Get logged-in a  User details : POST "/api/auth/getuser". Login required
 router.post("/getuser", fetchuser, async (req, res) => {
   try {
-    userId = req.user.id; ///temporary userID
+    const userId = req.user.id; ///temporary userID
     //find the user by userId select details except the password:
     const user = await User.findById(userId).select("-password");
     res.send(user);
